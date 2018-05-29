@@ -3,88 +3,63 @@
 
 #include <stdint.h>
 
-// #define the macros below to 1/0 to enable/disable the mode of operation.
-//
-// CBC enables AES encryption in CBC-mode of operation.
-// CTR enables encryption in counter-mode.
-// ECB enables the basic ECB 16-byte block algorithm. All can be enabled simultaneously.
+#define AES_BLOCKLEN 16 //AES has 128-bit block length
 
-// The #ifndef-guard allows it to be configured before #include'ing or at compile time.
-#ifndef CBC
-  #define CBC 1
-#endif
-
-#ifndef ECB
-  #define ECB 1
-#endif
-
-#ifndef CTR
-  #define CTR 1
-#endif
+#define AES128_ID 0
+#define AES192_ID 1
+#define AES256_ID 2
 
 
-#define AES128 1
-//#define AES192 1
-//#define AES256 1
+#define AES128_KEYLEN 16
+#define AES192_KEYLEN 24
+#define AES256_KEYLEN 32
 
-#define AES_BLOCKLEN 16 //Block length in bytes AES is 128b block only
+// AESxxx_KEYLEN / 4 + 6
+// #define AES128_NR 10
+// #define AES192_NR 12
+// #define AES256_NR 14
 
-#if defined(AES256) && (AES256 == 1)
-    #define AES_KEYLEN 32
-    #define AES_keyExpSize 240
-#elif defined(AES192) && (AES192 == 1)
-    #define AES_KEYLEN 24
-    #define AES_keyExpSize 208
-#else
-    #define AES_KEYLEN 16   // Key length in bytes
-    #define AES_keyExpSize 176
-#endif
+// AES_BLOCKLEN * (AESxxx_NR + 1)
+// #define AES128_KEYEXPSIZE 176
+// #define AES192_KEYEXPSIZE 208
+// #define AES256_KEYEXPSIZE 240
 
-struct AES_ctx
+// enough to keep RoundKey of all variants
+#define AES_KEYEXPSIZE 240
+
+
+typedef struct aes_ctx_t
 {
-  uint8_t RoundKey[AES_keyExpSize];
-#if (defined(CBC) && (CBC == 1)) || (defined(CTR) && (CTR == 1))
-  uint8_t Iv[AES_BLOCKLEN];
-#endif
-};
+	uint8_t id;
+	//state_t state;
+	uint8_t Iv[AES_BLOCKLEN];
+	// buffer used in CTR and CBC decrypt
+	uint8_t buffer[AES_BLOCKLEN];
+	uint8_t RoundKey[AES_KEYEXPSIZE];
+} AES_ctx;
 
-void AES_init_ctx(struct AES_ctx* ctx, const uint8_t* key);
-#if (defined(CBC) && (CBC == 1)) || (defined(CTR) && (CTR == 1))
-void AES_init_ctx_iv(struct AES_ctx* ctx, const uint8_t* key, const uint8_t* iv);
-void AES_ctx_set_iv(struct AES_ctx* ctx, const uint8_t* iv);
-#endif
+void AES_init_ctx(AES_ctx *ctx, const uint8_t *key);
+void AES_init_ctx_iv(AES_ctx *ctx, const uint8_t *key, const uint8_t *iv);
+void AES_ctx_set_iv(AES_ctx *ctx, const uint8_t *iv);
 
-#if defined(ECB) && (ECB == 1)
-// buffer size is exactly AES_BLOCKLEN bytes; 
-// you need only AES_init_ctx as IV is not used in ECB 
+// buffer size is exactly AES_BLOCKLEN bytes;
+// you need only AES_init_ctx as IV is not used in ECB
 // NB: ECB is considered insecure for most uses
-void AES_ECB_encrypt(struct AES_ctx* ctx, const uint8_t* buf);
-void AES_ECB_decrypt(struct AES_ctx* ctx, const uint8_t* buf);
+void AES_ECB_encrypt(AES_ctx *ctx, uint8_t *buf);
+void AES_ECB_decrypt(AES_ctx *ctx, uint8_t *buf);
 
-#endif // #if defined(ECB) && (ECB == !)
-
-
-#if defined(CBC) && (CBC == 1)
 // buffer size MUST be mutile of AES_BLOCKLEN;
 // Suggest https://en.wikipedia.org/wiki/Padding_(cryptography)#PKCS7 for padding scheme
 // NOTES: you need to set IV in ctx via AES_init_ctx_iv() or AES_ctx_set_iv()
-//        no IV should ever be reused with the same key 
-void AES_CBC_encrypt_buffer(struct AES_ctx* ctx, uint8_t* buf, uint32_t length);
-void AES_CBC_decrypt_buffer(struct AES_ctx* ctx, uint8_t* buf, uint32_t length);
+//        no IV should ever be reused with the same key
+void AES_CBC_encrypt_buffer(AES_ctx *ctx, uint8_t *buf, uint32_t length);
+void AES_CBC_decrypt_buffer(AES_ctx *ctx, uint8_t *buf, uint32_t length);
 
-#endif // #if defined(CBC) && (CBC == 1)
-
-
-#if defined(CTR) && (CTR == 1)
-
-// Same function for encrypting as for decrypting. 
+// Same function for encrypting as for decrypting.
 // IV is incremented for every block, and used after encryption as XOR-compliment for output
 // Suggesting https://en.wikipedia.org/wiki/Padding_(cryptography)#PKCS7 for padding scheme
 // NOTES: you need to set IV in ctx with AES_init_ctx_iv() or AES_ctx_set_iv()
-//        no IV should ever be reused with the same key 
-void AES_CTR_xcrypt_buffer(struct AES_ctx* ctx, uint8_t* buf, uint32_t length);
-
-#endif // #if defined(CTR) && (CTR == 1)
-
+//        no IV should ever be reused with the same key
+void AES_CTR_xcrypt_buffer(AES_ctx *ctx, uint8_t *buf, uint32_t length);
 
 #endif //_AES_H_
