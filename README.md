@@ -7,22 +7,30 @@ You can override the default key-size of 128 bit with 192 or 256 bit by defining
 The API is very simple and looks like this (I am using C99 `<stdint.h>`-style annotated types):
 
 ```C
+/* Set AES variant, init, ctr crypt and cleanup */
+/* This is needed for now but will be merged to AES_init_ctx */
+AES_ctx ctx;
+ctx.id = AES256_ID;
+AES_init_ctx_iv(&ctx, key, iv);
+AES_CTR_xcrypt_buffer(&ctx, buf, length);
+Some_Secure_Zero_Function(&ctx, sizeof(ctx));
+
 /* Initialize context calling one of: */
-void AES_init_ctx(struct AES_ctx* ctx, const uint8_t* key);
-void AES_init_ctx_iv(struct AES_ctx* ctx, const uint8_t* key, const uint8_t* iv);
+void AES_init_ctx(AES_ctx* ctx, const uint8_t* key);
+void AES_init_ctx_iv(AES_ctx* ctx, const uint8_t* key, const uint8_t* iv);
 
 /* ... or reset IV at random point: */
-void AES_ctx_set_iv(struct AES_ctx* ctx, const uint8_t* iv);
+void AES_ctx_set_iv(AES_ctx* ctx, const uint8_t* iv);
 
 /* Then start encrypting and decrypting with the functions below: */
-void AES_ECB_encrypt(struct AES_ctx* ctx, const uint8_t* buf);
-void AES_ECB_decrypt(struct AES_ctx* ctx, const uint8_t* buf);
+void AES_ECB_encrypt(AES_ctx* ctx, uint8_t* buf);
+void AES_ECB_decrypt(AES_ctx* ctx, uint8_t* buf);
 
-void AES_CBC_encrypt_buffer(struct AES_ctx* ctx, uint8_t* buf, uint32_t length);
-void AES_CBC_decrypt_buffer(struct AES_ctx* ctx, uint8_t* buf, uint32_t length);
+void AES_CBC_encrypt_buffer(AES_ctx* ctx, uint8_t* buf, uint32_t length);
+void AES_CBC_decrypt_buffer(AES_ctx* ctx, uint8_t* buf, uint32_t length);
 
 /* Same function for encrypting as for decrypting in CTR mode */
-void AES_CTR_xcrypt_buffer(struct AES_ctx* ctx, uint8_t* buf, uint32_t length);
+void AES_CTR_xcrypt_buffer(AES_ctx* ctx, uint8_t* buf, uint32_t length);
 ```
 
 Note: 
