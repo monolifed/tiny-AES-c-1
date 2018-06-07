@@ -30,7 +30,7 @@
 
 typedef struct aes_ctx_t
 {
-	uint8_t id;
+	uint8_t flags;
 	//state_t state;
 	uint8_t Iv[AES_BLOCKLEN];
 	// buffer used in CTR and CBC decrypt
@@ -38,8 +38,19 @@ typedef struct aes_ctx_t
 	uint8_t RoundKey[AES_KEYEXPSIZE];
 } AES_ctx;
 
-void AES_init_ctx(AES_ctx *ctx, const uint8_t *key);
-void AES_init_ctx_iv(AES_ctx *ctx, const uint8_t *key, const uint8_t *iv);
+typedef enum
+{
+	AES_128 = 0x0,
+	AES_192 = 0x1,
+	AES_256 = 0x2,
+	AES_type_mask = 0x3,
+	AES_has_key = 0x04,
+	AES_has_iv = 0x08,
+	AES_crypt = 0x10,
+} AES_flags;
+
+void AES_ctx_init(AES_ctx *ctx, uint32_t keylen, const uint8_t *key, const uint8_t *iv);
+void AES_ctx_set_key(AES_ctx *ctx, uint32_t keylen, const uint8_t *key);
 void AES_ctx_set_iv(AES_ctx *ctx, const uint8_t *iv);
 
 // buffer size is exactly AES_BLOCKLEN bytes;

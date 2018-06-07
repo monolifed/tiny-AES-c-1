@@ -168,10 +168,11 @@ static void KeyExpansion(AES_ctx *ctx, const uint8_t *Key)
 {
 	unsigned i, j, k;
 	uint8_t tempa[4]; // Used for the column/row operations
-	const uint32_t Nk = aes_nk[ctx->id];
-	const uint32_t Nr = aes_nr[ctx->id];
+	uint8_t aes_type = ctx->flags & AES_type_mask;
+	const uint32_t Nk = aes_nk[aes_type];
+	const uint32_t Nr = aes_nr[aes_type];
 	uint8_t *RoundKey = ctx->RoundKey;
-	uint8_t is_aes256 = (ctx->id == AES256_ID);
+	//uint8_t is_aes256 = (ctx->id == AES256_ID);
 	
 	// The first round key is the key itself.
 	for (i = 0; i < Nk; ++i)
@@ -222,7 +223,7 @@ static void KeyExpansion(AES_ctx *ctx, const uint8_t *Key)
 			tempa[0] = tempa[0] ^ Rcon[i / Nk];
 		}
 //#if defined(AES256) && (AES256 == 1)
-		if (is_aes256 && i % Nk == 4)
+		if (aes_type == AES_256 && i % Nk == 4)
 		{
 			// Function Subword()
 			{
@@ -242,19 +243,40 @@ static void KeyExpansion(AES_ctx *ctx, const uint8_t *Key)
 	}
 }
 
-void AES_init_ctx(AES_ctx *ctx, const uint8_t *key)
+void AES_ctx_set_key(AES_ctx *ctx, uint32_t keylen, const uint8_t *key)
 {
+	switch(keylen)
+	{
+		case AES128_KEYLEN:
+			ctx->flags = (ctx->flags & ~AES_type_mask) | AES_128;
+			break;
+		case AES192_KEYLEN:
+			ctx->flags = (ctx->flags & ~AES_type_mask) | AES_192;
+			break;
+		case AES256_KEYLEN:
+			ctx->flags = (ctx->flags & ~AES_type_mask) | AES_256;
+			break;
+		default:
+			return;
+	}
 	KeyExpansion(ctx, key);
+	ctx->flags |= AES_has_key;
 }
 
-void AES_init_ctx_iv(AES_ctx *ctx, const uint8_t *key, const uint8_t *iv)
-{
-	KeyExpansion(ctx, key);
-	memcpy(ctx->Iv, iv, AES_BLOCKLEN);
-}
 void AES_ctx_set_iv(AES_ctx *ctx, const uint8_t *iv)
 {
 	memcpy(ctx->Iv, iv, AES_BLOCKLEN);
+}
+
+void AES_ctx_init(AES_ctx *ctx, uint32_t keylen, const uint8_t *key, const uint8_t *iv)
+{
+	memset(ctx, 0, sizeof *ctx);
+	AES_ctx_set_key(ctx, keylen, key);
+	
+	if(iv)
+	{
+		AES_ctx_set_iv(ctx, iv);
+	} // else iv = 0
 }
 
 // This function adds the round key to state.
@@ -437,7 +459,7 @@ static void InvShiftRows(state_t state)
 static void Cipher(AES_ctx *ctx, state_t state)
 {
 	uint8_t round = 0;
-	const uint32_t Nr = aes_nr[ctx->id];
+	const uint32_t Nr = aes_nr[ctx->flags & AES_type_mask];
 	
 	// Add the First round key to the state before starting the rounds.
 	AddRoundKey(0, state, ctx->RoundKey);
@@ -463,7 +485,7 @@ static void Cipher(AES_ctx *ctx, state_t state)
 static void InvCipher(AES_ctx *ctx, state_t state)
 {
 	uint8_t round = 0;
-	const uint32_t Nr = aes_nr[ctx->id];
+	const uint32_t Nr = aes_nr[ctx->flags & AES_type_mask];
 	
 	// Add the First round key to the state before starting the rounds.
 	AddRoundKey(Nr, state, ctx->RoundKey);

@@ -15,6 +15,8 @@ static void test_decrypt_ecb(void);
 //static void test_encrypt_ecb_verbose(void);
 
 static const char *names[]  = {"AES128", "AES192", "AES256"};
+static const uint32_t keylens[] = {AES128_KEYLEN, AES192_KEYLEN, AES256_KEYLEN};
+
 int main(void)
 {
 	test_encrypt_cbc();
@@ -113,20 +115,21 @@ static void test_encrypt_ecb(void)
 	
 	uint8_t *keys[] = {AES128_key, AES192_key, AES256_key};
 	uint8_t *outs[] = {AES128_out, AES192_out, AES256_out};
+	uint8_t in_buf[16];
+	AES_ctx ctx;
 	for(int i = 0; i < 3; i++)
 	{
 		uint8_t * key = keys[i];
+		uint32_t keylen = keylens[i];
 		uint8_t * out = outs[i];
-		AES_ctx ctx;
-		ctx.id = i;
-		uint8_t in_cpy[16]; memcpy(in_cpy, in, 16);
+		memcpy(in_buf, in, 16);
 	
-		AES_init_ctx(&ctx, key);
-		AES_ECB_encrypt(&ctx, in_cpy);
+		AES_ctx_init(&ctx, keylen, key, NULL);
+		AES_ECB_encrypt(&ctx, in_buf);
 		
 		printf("ECB encrypt %s: ", names[i]);
 		
-		if (0 == memcmp((char *) out, (char *) in_cpy, 16))
+		if (0 == memcmp((char *) out, (char *) in_buf, 16))
 		{
 			printf("SUCCESS!\n");
 		}
@@ -172,14 +175,14 @@ static void test_decrypt_cbc(void)
 //  uint8_t buffer[64];
 	uint8_t *keys[] = {AES128_key, AES192_key, AES256_key};
 	uint8_t *ins[]  = {AES128_in, AES192_in, AES256_in};
+	AES_ctx ctx;
 	for(int i = 0; i < 3; i++)
 	{
 		uint8_t * key = keys[i];
+		uint32_t keylen = keylens[i];
 		uint8_t * in = ins[i];
-		AES_ctx ctx;
-		ctx.id = i;
 		
-		AES_init_ctx_iv(&ctx, key, iv);
+		AES_ctx_init(&ctx, keylen, key, iv);
 		AES_CBC_decrypt_buffer(&ctx, in, 64);
 		
 		printf("CBC decrypt %s: ", names[i]);
@@ -230,20 +233,21 @@ static void test_encrypt_cbc(void)
 	
 	uint8_t *keys[] = {AES128_key, AES192_key, AES256_key};
 	uint8_t *outs[] = {AES128_out, AES192_out, AES256_out};
+	uint8_t in_buf[64];
+	AES_ctx ctx;
 	for(int i = 0; i < 3; i++)
 	{
 		uint8_t * key = keys[i];
+		uint32_t keylen = keylens[i];
 		uint8_t * out = outs[i];
-		AES_ctx ctx;
-		ctx.id = i;
-		uint8_t in_cpy[64]; memcpy(in_cpy, in, 64);
+		memcpy(in_buf, in, 64);
 	
-		AES_init_ctx_iv(&ctx, key, iv);
-		AES_CBC_encrypt_buffer(&ctx, in_cpy, 64);
+		AES_ctx_init(&ctx, keylen, key, iv);
+		AES_CBC_encrypt_buffer(&ctx, in_buf, 64);
 		
 		printf("CBC encrypt %s: ", names[i]);
 		
-		if (0 == memcmp((char *) out, (char *) in_cpy, 64))
+		if (0 == memcmp((char *) out, (char *) in_buf, 64))
 		{
 			printf("SUCCESS!\n");
 		}
@@ -302,14 +306,14 @@ static void test_xcrypt_ctr(const char *xcrypt)
 
 	uint8_t *keys[] = {AES128_key, AES192_key, AES256_key};
 	uint8_t *ins[] = {AES128_in, AES192_in, AES256_in};
+	AES_ctx ctx;
 	for(int i = 0; i < 3; i++)
 	{
 		uint8_t * key = keys[i];
+		uint32_t keylen = keylens[i];
 		uint8_t * in = ins[i];
-		AES_ctx ctx;
-		ctx.id = i;
 	
-		AES_init_ctx_iv(&ctx, key, iv);
+		AES_ctx_init(&ctx, keylen, key, iv);
 		AES_CTR_xcrypt_buffer(&ctx, in, 64);
 		
 		printf("CTR %s %s: ", xcrypt, names[i]);
@@ -347,14 +351,14 @@ static void test_decrypt_ecb(void)
 
 	uint8_t *keys[] = {AES128_key, AES192_key, AES256_key};
 	uint8_t *ins[] = {AES128_in, AES192_in, AES256_in};
+	AES_ctx ctx;
 	for(int i = 0; i < 3; i++)
 	{
 		uint8_t * key = keys[i];
+		uint32_t keylen = keylens[i];
 		uint8_t * in = ins[i];
-		AES_ctx ctx;
-		ctx.id = i;
 	
-		AES_init_ctx(&ctx, key);
+		AES_ctx_init(&ctx, keylen, key, NULL);
 		AES_ECB_decrypt(&ctx, in);
 		
 		printf("ECB decrypt %s: ", names[i]);
